@@ -1,0 +1,16 @@
+#game-container {
+    width: auto; 
+    height: 98vh; 
+    background: black; 
+    position: relative; 
+    border: 2px solid #333;
+}
+
+#player {
+    width: 20px; 
+    height: 20px; 
+    background: red; 
+    position: absolute; 
+    top: 0; 
+    left: 0;
+}
