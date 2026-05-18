@@ -56,11 +56,11 @@ function moveAndSlide(speed) {
     let nextX = x + (dx * speed);
     let nextY = y + (dy * speed);
 
-    if (nextX >= 0 && nextX <= containerWidth - playerSize) {
+    if ((nextX >= 0 && nextX <= containerWidth - playerSize) && !collisionBox(nextX, nextY, playerSize)) {
         x = nextX; 
     }
     
-    if (nextY >= 0 && nextY <= containerHeight - playerSize) {
+    if ((nextY >= 0 && nextY <= containerHeight - playerSize) && !collisionBox(nextX, nextY, playerSize)) {
         y = nextY; 
     }
 

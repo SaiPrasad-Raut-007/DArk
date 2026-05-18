@@ -14,3 +14,8 @@
     top: 0; 
     left: 0;
 }
+
+.wall {
+    position: absolute;
+    background: white;
+}
