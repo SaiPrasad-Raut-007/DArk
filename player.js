@@ -3,11 +3,15 @@ const gameContainer = document.getElementById('game-container');
 
 const SPEED = 2;
 const BULLET_SPEED = 3;
+const MAX_PLAYER_HEALTH = 100;
 
-let x = 0;
-let y = 0;
+let playerHealth = 100;
+let allowedPlayerDamageScore = 10;
+
+let x = -40;
+let y = -40;
+
 let canShoot = true; 
-
 const bullets = [];
 
 const keys = {
@@ -31,14 +35,12 @@ document.addEventListener('keyup', (event) => {
     if (event.code === 'Space') canShoot = true;
 });
 
-const containerWidth = gameContainer.clientWidth;
-const containerHeight = gameContainer.clientHeight;
-const playerSize = 20; 
+const playerSize = 15; 
 
 function moveAndSlide(speed) {
     let dx = 0;
     let dy = 0;
-
+    
     if (keys.ArrowUp || keys.KeyW) dy -= 1;
     if (keys.ArrowDown || keys.KeyS) dy += 1;
     if (keys.ArrowLeft || keys.KeyA) dx -= 1;
@@ -53,11 +55,11 @@ function moveAndSlide(speed) {
     let nextX = x + (dx * speed);
     let nextY = y + (dy * speed);
 
-    if ((nextX >= 0 && nextX <= containerWidth - playerSize) && !isCollidingBox(nextX, nextY, playerSize)) {
+    if (!isCollidingBox(nextX, nextY, playerSize)) {
         x = nextX; 
     }
-    
-    if ((nextY >= 0 && nextY <= containerHeight - playerSize) && !isCollidingBox(nextX, nextY, playerSize)) {
+
+    if (!isCollidingBox(nextX, nextY, playerSize)) {
         y = nextY; 
     }
 
@@ -73,23 +75,25 @@ document.addEventListener('mousemove', (event) => {
 function playerShoots() {
     if (keys.Space && canShoot) {  
         canShoot = false; 
-        
         let bulletX = x;
         let bulletY = y;
 
-        let dx = mousePos[0] - bulletX;
-        let dy = mousePos[1] - bulletY;
-        
+        let targetWorldX = mousePos[0] - cameraOffsetX;
+        let targetWorldY = mousePos[1] - cameraOffsetY;
+
+        let dx = targetWorldX - bulletX;
+        let dy = targetWorldY - bulletY;
+
         const length = Math.sqrt(dx * dx + dy * dy);
         if (length > 0) { 
             dx /= length;
             dy /= length;
         }
-        
+
         const bullet = document.createElement('div');
         bullet.className = "bullet";
         bullet.style.transform = `translate(${bulletX}px, ${bulletY}px)`;
-        gameContainer.appendChild(bullet);
+        world.appendChild(bullet);
 
         bullets.push({
             element: bullet,
@@ -106,7 +110,6 @@ function playerShoots() {
 function updatePlayerBullets(speed) {
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
-        
         if (Date.now() - b.createdAt > 3000) {
             b.element.remove();
             bullets.splice(i, 1);
@@ -126,14 +129,33 @@ function updatePlayerBullets(speed) {
         }
 
         b.element.style.transform = `translate(${b.x}px, ${b.y}px)`;
-
-        if (isCollidingEnemy(b.x, b.y)) {
-            console.log("Shot an enemy");
-        }
-
-        if (b.x < 0 || b.x > containerWidth || b.y < 0 || b.y > containerHeight) {
-            b.element.remove();      
-            bullets.splice(i, 1);    
-        }
     }
+}
+
+const playerHealthBar = document.getElementById('player-health-bar');
+
+function updatePlayerHealth() {
+    const healthPercentage = playerHealth / MAX_PLAYER_HEALTH;
+    const newWidth = 30 * healthPercentage;
+    playerHealthBar.style.width = newWidth + 'px';
+    if (healthPercentage > 0.5) {
+        playerHealthBar.style.backgroundColor = "greenyellow";
+    } else if (healthPercentage > 0.25) {
+        playerHealthBar.style.backgroundColor = "orange";
+    } else {
+        playerHealthBar.style.backgroundColor = "red";
+    }
+    if (playerHealth === 0) {
+        killPlayer();
+    }
+}
+
+function damagePlayer() {
+    playerHealth -= allowedPlayerDamageScore;
+    if (playerHealth < 0) playerHealth = 0;
+    updatePlayerHealth();
+}
+
+function killPlayer() {
+    return;
 }
