@@ -45,3 +45,14 @@ for (let x = 100; x < ((100 + 70) * 10); x += 100 + 70) {
         drawBox(x, y)
     }
 }
+
+function updateGame() {
+    moveAndSlide(SPEED);
+
+    playerShoots();
+    updatePlayerBullets(BULLET_SPEED);
+
+    requestAnimationFrame(updateGame);
+}
+
+requestAnimationFrame(updateGame);

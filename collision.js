@@ -1,4 +1,4 @@
-function collisionBox(x, y, playerSize) {
+function isCollidingBox(x, y, playerSize) {
     const walls = document.getElementsByClassName('wall');
 
     for (let i = 0; i < walls.length; i++) {
