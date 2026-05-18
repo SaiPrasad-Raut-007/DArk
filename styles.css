@@ -11,8 +11,15 @@
     height: 20px; 
     background: red; 
     position: absolute; 
-    top: 40px; 
-    left: 40px;
+    top: 0px; 
+    left: 0px;
+}
+
+.enemy {
+    background-color: greenyellow;
+    position: absolute;
+    width: 20px;
+    height: 20px;
 }
 
 .wall {
@@ -25,4 +32,6 @@
     width: 10px;
     height: 10px;
     background-color: white;
+    top: 0px;
+    left: 0px;
 }

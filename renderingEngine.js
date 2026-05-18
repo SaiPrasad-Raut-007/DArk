@@ -1,12 +1,13 @@
 function drawBox(x, y, width = 100, height = 100, thickness = 4, openingSize = 40) {
     const doorIndex = Math.floor(Math.random() * 4);
     const boxContainer = document.createElement('div');
+    boxContainer.className = "room";
 
     const wallConfigs = [
-        { left: x, top: y, w: width + thickness, h: thickness }, // Top Wall
-        { left: x + width, top: y, w: thickness, h: height + thickness }, // Right Wall
-        { left: x, top: y + height, w: width + thickness, h: thickness }, // Bottom wall
-        { left: x, top: y, w: thickness, h: height + thickness } // Left Wall 
+        { left: x, top: y, w: width + thickness, h: thickness }, 
+        { left: x + width, top: y, w: thickness, h: height + thickness },
+        { left: x, top: y + height, w: width + thickness, h: thickness }, 
+        { left: x, top: y, w: thickness, h: height + thickness } 
     ];
 
     const piecesToDraw = [];
@@ -35,22 +36,47 @@ function drawBox(x, y, width = 100, height = 100, thickness = 4, openingSize = 4
         wall.style.width = piece.w + 'px';
         wall.style.height = piece.h + 'px';
         boxContainer.appendChild(wall);
+
+        wallData.push({
+            x: piece.left,
+            y: piece.top,
+            width: piece.w,
+            height: piece.h
+        });
     });
 
     gameContainer.appendChild(boxContainer);
+    
+    const enemySize = 20; 
+    const padding = 10;
+
+    const enemyPosOptions = [
+        [x + padding, y + padding], 
+        [x + width + thickness - padding - enemySize, y + padding], 
+        [x + padding, y + height + thickness - padding - enemySize], 
+        [x + width + thickness - padding - enemySize, y + height + thickness - padding - enemySize] 
+    ];
+    
+    const enemyPos = enemyPosOptions[Math.floor(Math.random() * 4)];
+    generateEnemy(enemyPos[0], enemyPos[1], boxContainer);
 }
 
 for (let x = 100; x < ((100 + 70) * 10); x += 100 + 70) {
     for (let y = 100; y < ((100 + 70) * 5); y += 100 + 70) {
-        drawBox(x, y)
+        drawBox(x, y);
     }
 }
 
 function updateGame() {
     moveAndSlide(SPEED);
-
     playerShoots();
     updatePlayerBullets(BULLET_SPEED);
+    updateEnemyBullets(BULLET_SPEED);
+
+    const enemyInRange = isPlayerInROI(x, y);
+    if (enemyInRange) {
+        enemyShoots(enemyInRange); 
+    }
 
     requestAnimationFrame(updateGame);
 }

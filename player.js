@@ -4,7 +4,6 @@ const gameContainer = document.getElementById('game-container');
 const SPEED = 2;
 const BULLET_SPEED = 3;
 
-// Player position and state
 let x = 0;
 let y = 0;
 let canShoot = true; 
@@ -29,7 +28,6 @@ document.addEventListener('keydown', (event) => {
 
 document.addEventListener('keyup', (event) => {
     if (event.code in keys) keys[event.code] = false;
-    // Unlock the gun when the spacebar is released
     if (event.code === 'Space') canShoot = true;
 });
 
@@ -63,8 +61,7 @@ function moveAndSlide(speed) {
         y = nextY; 
     }
 
-    player.style.left = x + 'px';
-    player.style.top = y + 'px';
+    player.style.transform = `translate(${x}px, ${y}px)`;
 }
 
 let mousePos = [0, 0];
@@ -80,7 +77,6 @@ function playerShoots() {
         let bulletX = x;
         let bulletY = y;
 
-        // Direction of the mouse pointer
         let dx = mousePos[0] - bulletX;
         let dy = mousePos[1] - bulletY;
         
@@ -92,9 +88,7 @@ function playerShoots() {
         
         const bullet = document.createElement('div');
         bullet.className = "bullet";
-        bullet.style.position = "absolute"; 
-        bullet.style.left = bulletX + 'px';
-        bullet.style.top = bulletY + 'px';
+        bullet.style.transform = `translate(${bulletX}px, ${bulletY}px)`;
         gameContainer.appendChild(bullet);
 
         bullets.push({
@@ -103,7 +97,8 @@ function playerShoots() {
             y: bulletY,
             dx: dx,
             dy: dy,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            createdBy: 'player'
         });
     }
 }
@@ -130,8 +125,11 @@ function updatePlayerBullets(speed) {
             b.dy = -b.dy;        
         }
 
-        b.element.style.left = b.x + 'px';
-        b.element.style.top = b.y + 'px';
+        b.element.style.transform = `translate(${b.x}px, ${b.y}px)`;
+
+        if (isCollidingEnemy(b.x, b.y)) {
+            console.log("Shot an enemy");
+        }
 
         if (b.x < 0 || b.x > containerWidth || b.y < 0 || b.y > containerHeight) {
             b.element.remove();      
