@@ -55,11 +55,11 @@ function moveAndSlide(speed) {
     let nextX = x + (dx * speed);
     let nextY = y + (dy * speed);
 
-    if (!isCollidingBox(nextX, nextY, playerSize)) {
+    if (!isCollidingBox(nextX, y, playerSize)) {
         x = nextX; 
     }
 
-    if (!isCollidingBox(nextX, nextY, playerSize)) {
+    if (!isCollidingBox(x, nextY, playerSize)) {
         y = nextY; 
     }
 

@@ -2,17 +2,163 @@ const enemyBullets = [];
 const MAX_ENEMY_HEALTH = 90;
 let allowedEnemyDamageScore = 30;
 
+const GRID_SIZE = 20; 
+const PATH_FOOTPRINT = 19; 
+let debugPath = false; 
+let debugElements = [];
+
+function getClosestValidGridNode(pixelX, pixelY) {
+    let snappedX = Math.round(pixelX / GRID_SIZE) * GRID_SIZE;
+    let snappedY = Math.round(pixelY / GRID_SIZE) * GRID_SIZE;
+    
+    if (!isCollidingBox(snappedX, snappedY, PATH_FOOTPRINT)) {
+        return { x: snappedX, y: snappedY };
+    }
+    
+    let alternatives = [
+        { x: snappedX - GRID_SIZE, y: snappedY },
+        { x: snappedX + GRID_SIZE, y: snappedY },
+        { x: snappedX, y: snappedY - GRID_SIZE },
+        { x: snappedX, y: snappedY + GRID_SIZE },
+        { x: snappedX - GRID_SIZE, y: snappedY - GRID_SIZE },
+        { x: snappedX + GRID_SIZE, y: snappedY - GRID_SIZE },
+        { x: snappedX - GRID_SIZE, y: snappedY + GRID_SIZE },
+        { x: snappedX + GRID_SIZE, y: snappedY + GRID_SIZE }
+    ];
+    
+    alternatives.sort((a, b) => {
+        let distA = Math.hypot(a.x - pixelX, a.y - pixelY);
+        let distB = Math.hypot(b.x - pixelX, b.y - pixelY);
+        return distA - distB;
+    });
+    
+    for (let alt of alternatives) {
+        if (!isCollidingBox(alt.x, alt.y, PATH_FOOTPRINT)) {
+            return alt;
+        }
+    }
+    
+    return { x: snappedX, y: snappedY }; 
+}
+
+function findPathAStar(startX, startY, targetX, targetY) {
+    const startNode = getClosestValidGridNode(startX, startY);
+    startNode.g_cost = 0;
+    startNode.h_cost = 0;
+    startNode.f_cost = 0;
+    startNode.parent = null;
+
+    const targetNode = getClosestValidGridNode(targetX, targetY);
+
+    let OPEN = [startNode];
+    let CLOSED = [];
+    let maxIterations = 1000; 
+
+    while (OPEN.length > 0 && maxIterations > 0) {
+        maxIterations--;
+
+        let currentNode = OPEN.reduce((prev, curr) => (curr.f_cost < prev.f_cost ? curr : prev));
+        
+        OPEN.splice(OPEN.indexOf(currentNode), 1);
+        CLOSED.push(currentNode);
+
+        if (currentNode.x === targetNode.x && currentNode.y === targetNode.y) {
+            let path = [];
+            let curr = currentNode;
+            while (curr.parent) {
+                path.push({ x: curr.x, y: curr.y });
+                curr = curr.parent;
+            }
+            return path.reverse();
+        }
+
+        let neighbourOffsets = [
+            {dx: 0, dy: -GRID_SIZE}, 
+            {dx: 0, dy: GRID_SIZE}, 
+            {dx: -GRID_SIZE, dy: 0}, 
+            {dx: GRID_SIZE, dy: 0}
+        ];
+
+        for (let offset of neighbourOffsets) {
+            let nX = currentNode.x + offset.dx;
+            let nY = currentNode.y + offset.dy;
+
+            if (isCollidingBox(nX, nY, PATH_FOOTPRINT) || CLOSED.some(node => node.x === nX && node.y === nY)) {
+                continue;
+            }
+
+            let halfX = currentNode.x + (offset.dx / 2);
+            let halfY = currentNode.y + (offset.dy / 2);
+            if (isCollidingBox(halfX, halfY, PATH_FOOTPRINT)) {
+                continue;
+            }
+
+            let neighbour = { x: nX, y: nY };
+            let distanceToNeighbour = 10;
+            let newCostToNeighbour = currentNode.g_cost + distanceToNeighbour;
+            let existingOpenNode = OPEN.find(node => node.x === nX && node.y === nY);
+
+            if (!existingOpenNode || newCostToNeighbour < existingOpenNode.g_cost) {
+                neighbour.g_cost = newCostToNeighbour;
+                neighbour.h_cost = Math.abs(nX - targetNode.x) + Math.abs(nY - targetNode.y);
+                neighbour.f_cost = neighbour.g_cost + neighbour.h_cost;
+                neighbour.parent = currentNode;
+
+                if (!existingOpenNode) {
+                    OPEN.push(neighbour);
+                } else {
+                    existingOpenNode.g_cost = neighbour.g_cost;
+                    existingOpenNode.f_cost = neighbour.f_cost;
+                    existingOpenNode.parent = neighbour.parent;
+                }
+            }
+        }
+    }
+    return [];
+}
+
+function drawPathVisualizer() {
+    for (let el of debugElements) {
+        el.remove();
+    }
+    debugElements = [];
+
+    if (!debugPath) return;
+
+    const gameWorld = document.getElementById('world');
+    if (!gameWorld) return;
+
+    for (let enemy of enemyData) {
+        if (enemy.type === 'chaser' && enemy.path && enemy.path.length > 0) {
+            for (let node of enemy.path) {
+                let dot = document.createElement('div');
+                dot.style.position = 'absolute';
+                dot.style.width = '6px';
+                dot.style.height = '6px';
+                dot.style.backgroundColor = 'fuchsia';
+                dot.style.borderRadius = '50%';
+                dot.style.left = (node.x + 7) + 'px'; 
+                dot.style.top = (node.y + 7) + 'px';
+                dot.style.zIndex = "1000"; 
+                
+                gameWorld.appendChild(dot);
+                debugElements.push(dot);
+            }
+        }
+    }
+}
+
 function generateEnemy(x, y, room, roomKey) {
     const enemy = document.createElement('div');
     const regionOfInfluence = document.createElement('div');
     enemy.className = "enemy";
     regionOfInfluence.style.position = 'absolute';
 
-    const isChaser = Math.random() > 0.75;
+    const isChaser = Math.random() > 0.90; 
     const type = isChaser ? 'chaser' : 'idle';
-
+    
     if (isChaser) {
-        enemy.style.backgroundColor = "rgb(252, 82, 3)";
+        enemy.style.backgroundColor = "orange";
     }
 
     const ROI_RADIUS = 75; 
@@ -49,16 +195,15 @@ function generateEnemy(x, y, room, roomKey) {
         health: MAX_ENEMY_HEALTH,
         healthBar: enemyHealthBar,
         roomKey: roomKey,
-
-        type : type,
-        moveSpeed: isChaser ? 0.5 : 0.2,
-
+        
+        type: type,
+        moveSpeed: isChaser ? 0.4 : 0.2,
         path: [],
         lastPathCalcTime: 0,
-
+        
         spawnX: x, 
         spawnY: y,
-        patrolState: 'wait', // 'wait' or 'move'
+        patrolState: 'wait',
         patrolWaitTime: Date.now() + Math.random() * 2000,
         patrolTargetX: 0,
         patrolTargetY: 0,
@@ -67,9 +212,116 @@ function generateEnemy(x, y, room, roomKey) {
     });
 }
 
+function updateEnemies() {
+    const now = Date.now();
+
+    for (let enemy of enemyData) {
+        if (enemy.type === 'chaser') {
+            const distToPlayer = Math.sqrt((enemy.x - x)**2 + (enemy.y - y)**2);
+            
+            if (distToPlayer < enemy.ROI_RADIUS * 4) { 
+                if (now - enemy.lastPathCalcTime > 250) { 
+                    enemy.lastPathCalcTime = now;
+                    enemy.path = findPathAStar(enemy.x, enemy.y, x, y);
+                }
+            } else {
+                enemy.path = []; 
+            }
+
+            if (enemy.path && enemy.path.length > 0) {
+                let targetWaypoint = enemy.path[0];
+                let dx = targetWaypoint.x - enemy.x;
+                let dy = targetWaypoint.y - enemy.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 12 || (enemy.path.length === 1 && distance < enemy.moveSpeed)) {
+                    enemy.path.shift(); 
+                } else {
+                    let moveX = (dx / distance) * enemy.moveSpeed;
+                    let moveY = (dy / distance) * enemy.moveSpeed;
+                    
+                    let nextX = enemy.x + moveX;
+                    let nextY = enemy.y + moveY;
+
+                    let movedX = false;
+                    let movedY = false;
+
+                    if (!isCollidingBox(nextX, enemy.y, 15)) {
+                        enemy.x = nextX;
+                        movedX = true;
+                    }
+                    
+                    if (!isCollidingBox(enemy.x, nextY, 15)) {
+                        enemy.y = nextY;
+                        movedY = true;
+                    }
+
+                    if (!movedX && Math.abs(dx) > 2) {
+                        let driftY = enemy.y + (dy > 0 ? enemy.moveSpeed : -enemy.moveSpeed);
+                        if (!isCollidingBox(enemy.x, driftY, 15)) {
+                            enemy.y = driftY;
+                        }
+                    }
+
+                    if (!movedY && Math.abs(dy) > 2) {
+                        let driftX = enemy.x + (dx > 0 ? enemy.moveSpeed : -enemy.moveSpeed);
+                        if (!isCollidingBox(driftX, enemy.y, 15)) {
+                            enemy.x = driftX;
+                        }
+                    }
+
+                    enemy.element.style.left = enemy.x + 'px';
+                    enemy.element.style.top = enemy.y + 'px';
+                }
+            }
+        } 
+        else if (enemy.type === 'idle') {
+            if (enemy.patrolState === 'wait') {
+                if (now > enemy.patrolWaitTime) {
+                    const directions = [
+                        {dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1}
+                    ];
+                    const dir = directions[Math.floor(Math.random() * directions.length)];
+                    const walkDist = 20 + (Math.random() * 30);
+                    
+                    enemy.patrolDx = dir.dx;
+                    enemy.patrolDy = dir.dy;
+                    enemy.patrolTargetX = enemy.x + (dir.dx * walkDist);
+                    enemy.patrolTargetY = enemy.y + (dir.dy * walkDist);
+                    enemy.patrolState = 'move';
+                }
+            } else if (enemy.patrolState === 'move') {
+                let nextX = enemy.x + (enemy.patrolDx * enemy.moveSpeed);
+                let nextY = enemy.y + (enemy.patrolDy * enemy.moveSpeed);
+                
+                let reachedTarget = false;
+                if (enemy.patrolDx > 0 && nextX >= enemy.patrolTargetX) reachedTarget = true;
+                if (enemy.patrolDx < 0 && nextX <= enemy.patrolTargetX) reachedTarget = true;
+                if (enemy.patrolDy > 0 && nextY >= enemy.patrolTargetY) reachedTarget = true;
+                if (enemy.patrolDy < 0 && nextY <= enemy.patrolTargetY) reachedTarget = true;
+
+                const maxWander = 75; 
+                const outOfBounds = Math.abs(nextX - enemy.spawnX) > maxWander || Math.abs(nextY - enemy.spawnY) > maxWander;
+                const collision = isCollidingBox(nextX, nextY, 15);
+
+                if (reachedTarget || outOfBounds || collision) {
+                    enemy.patrolState = 'wait';
+                    enemy.patrolWaitTime = now + 1000 + (Math.random() * 3000);
+                } else {
+                    enemy.x = nextX;
+                    enemy.y = nextY;
+                    enemy.element.style.left = enemy.x + 'px';
+                    enemy.element.style.top = enemy.y + 'px';
+                }
+            }
+        }
+    }
+    drawPathVisualizer();
+}
+
 function enemyShoots(enemy) {
     const now = Date.now();
-    const interval = Math.random() * 500 + 1500; 
+    const interval = Math.random() * 100 + 750; 
 
     if (now - enemy.lastShotTime < interval) return; 
     enemy.lastShotTime = now; 
@@ -130,15 +382,11 @@ function updateEnemyHealth(enemy) {
     const newWidth = 30 * healthPercentage;
     
     enemy.healthBar.style.width = newWidth + 'px'; 
-    if (healthPercentage > 0.5) {
+    if (healthPercentage > 0.67) {
         enemy.healthBar.style.backgroundColor = "greenyellow";
-    } 
-    
-    else if (healthPercentage > 0.25) {
+    } else if (healthPercentage > 0.34) {
         enemy.healthBar.style.backgroundColor = "orange";
-    } 
-    
-    else {
+    } else {
         enemy.healthBar.style.backgroundColor = "red";
     }
 
@@ -158,200 +406,5 @@ function killEnemy(enemy) {
     const index = enemyData.indexOf(enemy);
     if (index > -1) {
         enemyData.splice(index, 1);
-    }
-}
-
-const GRID_SIZE = 20;
-
-function findPathAStar(startX, startY, targetX, targetY) {
-    const startNode = {
-        x: Math.round(startX/GRID_SIZE) * GRID_SIZE,
-        y: Math.round(startY/GRID_SIZE) * GRID_SIZE,
-        g_cost:0,
-        h_cost: 0,
-        f_cost: 0,
-        parent: null
-    };
-    const targetNode = {
-        x: Math.round(targetX/GRID_SIZE) * GRID_SIZE, 
-        y: Math.round(targetY/GRID_SIZE) * GRID_SIZE
-    }
-
-    let OPEN = [startNode];
-    let CLOSED = [];
-
-    let maxIterations = 500;
-
-    while (OPEN.length > 0 && maxIterations > 0) {
-        maxIterations--;
-
-        let currentNode = OPEN.reduce((prev, curr) => (curr.f_cost < prev.f_cost ? curr : prev));
-        
-        OPEN.splice(OPEN.indexOf(currentNode), 1);
-        CLOSED.push(currentNode);
-
-        if (currentNode.x === targetNode.x && currentNode.y === targetNode.y) {
-            let path = [];
-            let curr = currentNode;
-            while (curr.parent) {
-                path.push({
-                    x: currentNode.x,
-                    y: currentNode.y
-                });
-                curr = curr.parent;
-            }
-            return path.reverse();
-        }
-
-        let neighbourOffsets = [
-            {dx: 0, dy: -GRID_SIZE}, 
-            {dx: 0, dy: GRID_SIZE}, 
-            {dx: -GRID_SIZE, dy: 0}, 
-            {dx: GRID_SIZE, dy: 0}
-        ]
-
-        for (let offset of neighbourOffsets) {
-            let nX = currentNode.x + offset.dx;
-            let nY = currentNode.y + offset.dy;
-
-            if ((isCollidingBox(nX, nY, 15)) || (CLOSED.some(node => node.x === nX && node.y === nY))) {
-                continue;
-            };
-
-            let neighbour = {
-                x: nX,
-                y: nY
-            };
-            let distanceToNeighbour = 10;
-
-            let newCostToNeighbour = currentNode.g_cost + distanceToNeighbour;
-            let existingOpenNode = OPEN.find(node => node.x === nX && node.y === nY);
-
-            if (!existingOpenNode || newCostToNeighbour < existingOpenNode.g_cost) {
-                neighbour.g_cost = newCostToNeighbour;
-                neighbour.h_cost = Math.abs(nX - targetNode.x) + Math.abs(nY - targetNode.y);
-                neighbour.f_cost = neighbour.g_cost + neighbour.h_cost;
-
-                neighbour.parent = currentNode;
-
-                if (!existingOpenNode) {
-                    OPEN.push(neighbour);
-                } 
-
-                else {
-                    existingOpenNode.g_cost = neighbour.g_cost;
-                    existingOpenNode.f_cost = neighbour.f_cost;
-                    existingOpenNode.parent = neighbour.parent;
-                }
-            }
-        }
-    }
-
-    return [];
-}
-
-function updateEnemies() {
-    const now = Date.now();
-
-    for (let enemy of enemyData) {
-        
-        // ==========================================
-        // BEHAVIOR 1: THE CHASER (A* Pathfinding)
-        // ==========================================
-        if (enemy.type === 'chaser') {
-            const distToPlayer = Math.sqrt((enemy.x - x)**2 + (enemy.y - y)**2);
-            
-            if (distToPlayer < enemy.ROI_RADIUS * 3) { 
-                if (now - enemy.lastPathCalcTime > 500) {
-                    enemy.lastPathCalcTime = now;
-                    enemy.path = findPathAStar(enemy.x, enemy.y, x, y);
-                }
-            } else {
-                enemy.path = []; 
-            }
-
-            if (enemy.path && enemy.path.length > 0) {
-                let targetWaypoint = enemy.path[0];
-                let dx = targetWaypoint.x - enemy.x;
-                let dy = targetWaypoint.y - enemy.y;
-                let distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < enemy.moveSpeed) {
-                    enemy.path.shift(); 
-                } else {
-                    let moveX = (dx / distance) * enemy.moveSpeed;
-                    let moveY = (dy / distance) * enemy.moveSpeed;
-                    
-                    let nextX = enemy.x + moveX;
-                    let nextY = enemy.y + moveY;
-
-                    if (!isCollidingBox(nextX, enemy.y, 15)) enemy.x = nextX;
-                    if (!isCollidingBox(enemy.x, nextY, 15)) enemy.y = nextY;
-
-                    enemy.element.style.left = enemy.x + 'px';
-                    enemy.element.style.top = enemy.y + 'px';
-                }
-            }
-        } 
-        
-        // =====================
-        // BEHAVIOR 2: THE IDLER 
-        // =====================
-        else if (enemy.type === 'idle') {
-            
-            if (enemy.patrolState === 'wait') {
-                if (now > enemy.patrolWaitTime) {
-                    // Pick a random orthogonal direction (Up, Down, Left, Right)
-                    const directions = [
-                        {dx: 1, dy: 0}, {dx: -1, dy: 0}, 
-                        {dx: 0, dy: 1}, {dx: 0, dy: -1}
-                    ];
-                    const dir = directions[Math.floor(Math.random() * directions.length)];
-                    
-                    // Pick a random distance to walk (between 20 and 50 pixels)
-                    const walkDist = 20 + (Math.random() * 30);
-                    
-                    enemy.patrolDx = dir.dx;
-                    enemy.patrolDy = dir.dy;
-                    enemy.patrolTargetX = enemy.x + (dir.dx * walkDist);
-                    enemy.patrolTargetY = enemy.y + (dir.dy * walkDist);
-                    
-                    enemy.patrolState = 'move';
-                }
-            } 
-            
-            else if (enemy.patrolState === 'move') {
-                let nextX = enemy.x + (enemy.patrolDx * enemy.moveSpeed);
-                let nextY = enemy.y + (enemy.patrolDy * enemy.moveSpeed);
-                
-                // 1. Check if we reached the target distance
-                let reachedTarget = false;
-                if (enemy.patrolDx > 0 && nextX >= enemy.patrolTargetX) reachedTarget = true;
-                if (enemy.patrolDx < 0 && nextX <= enemy.patrolTargetX) reachedTarget = true;
-                if (enemy.patrolDy > 0 && nextY >= enemy.patrolTargetY) reachedTarget = true;
-                if (enemy.patrolDy < 0 && nextY <= enemy.patrolTargetY) reachedTarget = true;
-
-                // 2. Check if we are wandering too far from our spawn point (prevents leaving doors)
-                const maxWander = 75; 
-                const outOfBounds = 
-                    Math.abs(nextX - enemy.spawnX) > maxWander || 
-                    Math.abs(nextY - enemy.spawnY) > maxWander;
-
-                // 3. Check physical wall collisions
-                const collision = isCollidingBox(nextX, nextY, 15);
-
-                // If any of these are true, stop walking and go back to waiting
-                if (reachedTarget || outOfBounds || collision) {
-                    enemy.patrolState = 'wait';
-                    enemy.patrolWaitTime = now + 1000 + (Math.random() * 3000); // Wait 1 to 4 seconds
-                } else {
-                    // Safe to step forward
-                    enemy.x = nextX;
-                    enemy.y = nextY;
-                    enemy.element.style.left = enemy.x + 'px';
-                    enemy.element.style.top = enemy.y + 'px';
-                }
-            }
-        }
     }
 }
