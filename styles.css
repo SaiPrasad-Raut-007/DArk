@@ -1,6 +1,8 @@
 html, body {
   overflow: hidden;
   height: 100%;
+  justify-content: center;
+  align-content: center;
 }
 
 #game-container {
@@ -27,6 +29,19 @@ html, body {
     position: absolute; 
     top: 0px; 
     left: 0px;
+}
+
+#sector {
+    position: absolute;
+    top: -92.5px;
+    left: -92.5px;
+    width: 200px;
+    height: 200px;
+    background: rgba(142, 225, 65, 0.50); 
+    border-radius: 50%;
+
+    mask-image: conic-gradient(yellow 0deg 110deg, transparent 110deg 360deg);
+    -webkit-mask-image: conic-gradient(yellow 0deg 110deg, transparent 110deg 360deg);
 }
 
 .enemy {

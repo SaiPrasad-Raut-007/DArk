@@ -138,6 +138,8 @@ function updateGame() {
     manageInfiniteWorld(); 
     playerShoots();
 
+    rotateSector();
+
     updatePlayerBullets(BULLET_SPEED);
     updateEnemyBullets(BULLET_SPEED);
 

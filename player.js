@@ -72,6 +72,24 @@ document.addEventListener('mousemove', (event) => {
     mousePos = [event.clientX, event.clientY];
 });
 
+const sector = document.getElementById('sector');
+
+function rotateSector() {
+    const playerWorldX = x + (playerSize / 2);
+    const playerWorldY = y + (playerSize / 2);
+
+    const targetWorldX = mousePos[0] - cameraOffsetX;
+    const targetWorldY = mousePos[1] - cameraOffsetY;
+
+    const dx = targetWorldX - playerWorldX;
+    const dy = targetWorldY - playerWorldY;
+
+    const angleInDegrees = Math.atan2(dy, dx) * (180 / Math.PI);
+    const finalRotation = angleInDegrees + 35;
+
+    sector.style.transform = `rotate(${finalRotation}deg)`;
+}
+
 function playerShoots() {
     if (keys.Space && canShoot) {  
         canShoot = false; 
