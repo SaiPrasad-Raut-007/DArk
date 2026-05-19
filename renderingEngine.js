@@ -143,6 +143,8 @@ function updateGame() {
     updatePlayerBullets(BULLET_SPEED);
     updateEnemyBullets(BULLET_SPEED);
 
+    updateEnemies();
+
     const enemyInRange = isPlayerInROI(x, y);
 
     if (enemyInRange) {
