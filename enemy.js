@@ -56,7 +56,6 @@ function findPathAStar(startX, startY, targetX, targetY) {
 
     while (OPEN.length > 0 && maxIterations > 0) {
         maxIterations--;
-
         let currentNode = OPEN.reduce((prev, curr) => (curr.f_cost < prev.f_cost ? curr : prev));
         
         OPEN.splice(OPEN.indexOf(currentNode), 1);
@@ -73,10 +72,8 @@ function findPathAStar(startX, startY, targetX, targetY) {
         }
 
         let neighbourOffsets = [
-            {dx: 0, dy: -GRID_SIZE}, 
-            {dx: 0, dy: GRID_SIZE}, 
-            {dx: -GRID_SIZE, dy: 0}, 
-            {dx: GRID_SIZE, dy: 0}
+            {dx: 0, dy: -GRID_SIZE}, {dx: 0, dy: GRID_SIZE}, 
+            {dx: -GRID_SIZE, dy: 0}, {dx: GRID_SIZE, dy: 0}
         ];
 
         for (let offset of neighbourOffsets) {
@@ -118,13 +115,9 @@ function findPathAStar(startX, startY, targetX, targetY) {
 }
 
 function drawPathVisualizer() {
-    for (let el of debugElements) {
-        el.remove();
-    }
+    for (let el of debugElements) el.remove();
     debugElements = [];
-
     if (!debugPath) return;
-
     const gameWorld = document.getElementById('world');
     if (!gameWorld) return;
 
@@ -140,7 +133,6 @@ function drawPathVisualizer() {
                 dot.style.left = (node.x + 7) + 'px'; 
                 dot.style.top = (node.y + 7) + 'px';
                 dot.style.zIndex = "1000"; 
-                
                 gameWorld.appendChild(dot);
                 debugElements.push(dot);
             }
@@ -154,12 +146,9 @@ function generateEnemy(x, y, room, roomKey) {
     enemy.className = "enemy";
     regionOfInfluence.style.position = 'absolute';
 
-    const isChaser = Math.random() > 0.90; 
+    const isChaser = Math.random() > 0.75; 
     const type = isChaser ? 'chaser' : 'idle';
-    
-    if (isChaser) {
-        enemy.style.backgroundColor = "orange";
-    }
+    if (isChaser) enemy.style.backgroundColor = "orange";
 
     const ROI_RADIUS = 75; 
     const enemySize = 15;
@@ -185,30 +174,23 @@ function generateEnemy(x, y, room, roomKey) {
     room.appendChild(enemy);
 
     enemyData.push({
-        x: x,
-        y: y,
-        width: 15,
-        height: 15,
+        x: x, y: y,
+        width: 15, height: 15,
         element: enemy,
         ROI_RADIUS: ROI_RADIUS,
         lastShotTime: 0, 
         health: MAX_ENEMY_HEALTH,
         healthBar: enemyHealthBar,
         roomKey: roomKey,
-        
         type: type,
         moveSpeed: isChaser ? 0.4 : 0.2,
         path: [],
         lastPathCalcTime: 0,
-        
-        spawnX: x, 
-        spawnY: y,
+        spawnX: x, spawnY: y,
         patrolState: 'wait',
         patrolWaitTime: Date.now() + Math.random() * 2000,
-        patrolTargetX: 0,
-        patrolTargetY: 0,
-        patrolDx: 0,
-        patrolDy: 0
+        patrolTargetX: 0, patrolTargetY: 0,
+        patrolDx: 0, patrolDy: 0
     });
 }
 
@@ -218,7 +200,6 @@ function updateEnemies() {
     for (let enemy of enemyData) {
         if (enemy.type === 'chaser') {
             const distToPlayer = Math.sqrt((enemy.x - x)**2 + (enemy.y - y)**2);
-            
             if (distToPlayer < enemy.ROI_RADIUS * 4) { 
                 if (now - enemy.lastPathCalcTime > 250) { 
                     enemy.lastPathCalcTime = now;
@@ -239,10 +220,8 @@ function updateEnemies() {
                 } else {
                     let moveX = (dx / distance) * enemy.moveSpeed;
                     let moveY = (dy / distance) * enemy.moveSpeed;
-                    
                     let nextX = enemy.x + moveX;
                     let nextY = enemy.y + moveY;
-
                     let movedX = false;
                     let movedY = false;
 
@@ -250,7 +229,6 @@ function updateEnemies() {
                         enemy.x = nextX;
                         movedX = true;
                     }
-                    
                     if (!isCollidingBox(enemy.x, nextY, 15)) {
                         enemy.y = nextY;
                         movedY = true;
@@ -258,16 +236,12 @@ function updateEnemies() {
 
                     if (!movedX && Math.abs(dx) > 2) {
                         let driftY = enemy.y + (dy > 0 ? enemy.moveSpeed : -enemy.moveSpeed);
-                        if (!isCollidingBox(enemy.x, driftY, 15)) {
-                            enemy.y = driftY;
-                        }
+                        if (!isCollidingBox(enemy.x, driftY, 15)) enemy.y = driftY;
                     }
 
                     if (!movedY && Math.abs(dy) > 2) {
                         let driftX = enemy.x + (dx > 0 ? enemy.moveSpeed : -enemy.moveSpeed);
-                        if (!isCollidingBox(driftX, enemy.y, 15)) {
-                            enemy.x = driftX;
-                        }
+                        if (!isCollidingBox(driftX, enemy.y, 15)) enemy.x = driftX;
                     }
 
                     enemy.element.style.left = enemy.x + 'px';
@@ -278,9 +252,7 @@ function updateEnemies() {
         else if (enemy.type === 'idle') {
             if (enemy.patrolState === 'wait') {
                 if (now > enemy.patrolWaitTime) {
-                    const directions = [
-                        {dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1}
-                    ];
+                    const directions = [{dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1}];
                     const dir = directions[Math.floor(Math.random() * directions.length)];
                     const walkDist = 20 + (Math.random() * 30);
                     
@@ -328,7 +300,6 @@ function enemyShoots(enemy) {
 
     let bulletX = enemy.x;
     let bulletY = enemy.y;
-
     let dx = x - bulletX;
     let dy = y - bulletY;
 
@@ -341,15 +312,12 @@ function enemyShoots(enemy) {
     const bullet = document.createElement('div');
     bullet.className = "bullet";
     bullet.style.transform = `translate(${bulletX}px, ${bulletY}px)`;
-
     world.appendChild(bullet);
 
     enemyBullets.push({
         element: bullet,
-        x: bulletX,
-        y: bulletY,
-        dx: dx,
-        dy: dy,
+        x: bulletX, y: bulletY,
+        dx: dx, dy: dy,
         createdAt: Date.now(),
         createdBy: 'enemy',
     });
@@ -390,9 +358,7 @@ function updateEnemyHealth(enemy) {
         enemy.healthBar.style.backgroundColor = "red";
     }
 
-    if (enemy.health === 0) {
-        killEnemy(enemy);
-    }
+    if (enemy.health === 0) killEnemy(enemy);
 }
 
 function damageEnemy(enemy) {
@@ -402,6 +368,7 @@ function damageEnemy(enemy) {
 }
 
 function killEnemy(enemy) {
+    dropLoot(enemy.x, enemy.y);
     enemy.element.remove();
     const index = enemyData.indexOf(enemy);
     if (index > -1) {

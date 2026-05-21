@@ -1,28 +1,27 @@
 const player = document.getElementById('player');
 const gameContainer = document.getElementById('game-container');
+const sector = document.getElementById('sector');
+const playerHealthBar = document.getElementById('player-health-bar');
 
 const SPEED = 2;
 const BULLET_SPEED = 3;
 const MAX_PLAYER_HEALTH = 100;
+const playerSize = 15;
 
 let playerHealth = 100;
 let allowedPlayerDamageScore = 10;
-
+let playerBullets = 9;
 let x = -40;
 let y = -40;
-
 let canShoot = true; 
 const bullets = [];
+let mousePos = [0, 0];
 
 const keys = {
-    ArrowUp: false,
-    KeyW: false,
-    ArrowDown: false,
-    KeyS: false,
-    ArrowLeft: false,
-    KeyA: false,
-    ArrowRight: false,
-    KeyD: false,
+    ArrowUp: false, KeyW: false,
+    ArrowDown: false, KeyS: false,
+    ArrowLeft: false, KeyA: false,
+    ArrowRight: false, KeyD: false,
     Space: false,
 };
 
@@ -35,7 +34,22 @@ document.addEventListener('keyup', (event) => {
     if (event.code === 'Space') canShoot = true;
 });
 
-const playerSize = 15; 
+document.addEventListener('mousemove', (event) => {
+    mousePos = [event.clientX, event.clientY];
+});
+
+function updateInventoryUI() {
+    for (let i = 1; i <= 9; i++) {
+        const box = document.getElementById(`bullet-box-${i}`);
+        if (i <= playerBullets) {
+            box.classList.add('filled');
+        } else {
+            box.classList.remove('filled');
+        }
+    }
+}
+
+updateInventoryUI();
 
 function moveAndSlide(speed) {
     let dx = 0;
@@ -55,50 +69,32 @@ function moveAndSlide(speed) {
     let nextX = x + (dx * speed);
     let nextY = y + (dy * speed);
 
-    if (!isCollidingBox(nextX, y, playerSize)) {
-        x = nextX; 
-    }
-
-    if (!isCollidingBox(x, nextY, playerSize)) {
-        y = nextY; 
-    }
+    if (!isCollidingBox(nextX, y, playerSize)) x = nextX; 
+    if (!isCollidingBox(x, nextY, playerSize)) y = nextY; 
 
     player.style.transform = `translate(${x}px, ${y}px)`;
 }
 
-let mousePos = [0, 0];
-
-document.addEventListener('mousemove', (event) => {
-    mousePos = [event.clientX, event.clientY];
-});
-
-const sector = document.getElementById('sector');
-
 function rotateSector() {
     const playerWorldX = x + (playerSize / 2);
     const playerWorldY = y + (playerSize / 2);
-
     const targetWorldX = mousePos[0] - cameraOffsetX;
     const targetWorldY = mousePos[1] - cameraOffsetY;
-
     const dx = targetWorldX - playerWorldX;
     const dy = targetWorldY - playerWorldY;
 
     const angleInDegrees = Math.atan2(dy, dx) * (180 / Math.PI);
     const finalRotation = angleInDegrees + 35;
-
     sector.style.transform = `rotate(${finalRotation}deg)`;
 }
 
 function playerShoots() {
-    if (keys.Space && canShoot) {  
+    if (keys.Space && canShoot && playerBullets > 0) {  
         canShoot = false; 
         let bulletX = x;
         let bulletY = y;
-
         let targetWorldX = mousePos[0] - cameraOffsetX;
         let targetWorldY = mousePos[1] - cameraOffsetY;
-
         let dx = targetWorldX - bulletX;
         let dy = targetWorldY - bulletY;
 
@@ -112,6 +108,9 @@ function playerShoots() {
         bullet.className = "bullet";
         bullet.style.transform = `translate(${bulletX}px, ${bulletY}px)`;
         world.appendChild(bullet);
+
+        playerBullets--;
+        updateInventoryUI();
 
         bullets.push({
             element: bullet,
@@ -150,12 +149,11 @@ function updatePlayerBullets(speed) {
     }
 }
 
-const playerHealthBar = document.getElementById('player-health-bar');
-
 function updatePlayerHealth() {
     const healthPercentage = playerHealth / MAX_PLAYER_HEALTH;
-    const newWidth = 30 * healthPercentage;
-    playerHealthBar.style.width = newWidth + 'px';
+    const newWidth = (healthPercentage * 100) + '%';
+    playerHealthBar.style.width = newWidth;
+    
     if (healthPercentage > 0.5) {
         playerHealthBar.style.backgroundColor = "greenyellow";
     } else if (healthPercentage > 0.25) {
@@ -163,9 +161,8 @@ function updatePlayerHealth() {
     } else {
         playerHealthBar.style.backgroundColor = "red";
     }
-    if (playerHealth === 0) {
-        killPlayer();
-    }
+    
+    if (playerHealth === 0) killPlayer();
 }
 
 function damagePlayer() {
