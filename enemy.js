@@ -7,6 +7,27 @@ const PATH_FOOTPRINT = 19;
 let debugPath = false; 
 let debugElements = [];
 
+const availableWeapons = ['shootShortRanged', 'shootLongRanged', 'shootLaser', 'shootRicochetSingle', 'shootRicochetMulti'];
+const weaponsRarity = [65, 30, 4, 10, 1];
+
+function getWeightedRandomWeapon() {
+    let totalWeight = 0;
+    for (let i = 0; i < weaponsRarity.length; i++) {
+        totalWeight += weaponsRarity[i];
+    }
+
+    let randomNum = Math.random() * totalWeight;
+
+    for (let i = 0; i < weaponsRarity.length; i++) {
+        if (randomNum < weaponsRarity[i]) {
+            return availableWeapons[i];
+        }
+        randomNum -= weaponsRarity[i];
+    }
+    
+    return availableWeapons[0]; 
+}
+
 function getClosestValidGridNode(pixelX, pixelY) {
     let snappedX = Math.round(pixelX / GRID_SIZE) * GRID_SIZE;
     let snappedY = Math.round(pixelY / GRID_SIZE) * GRID_SIZE;
@@ -27,8 +48,8 @@ function getClosestValidGridNode(pixelX, pixelY) {
     ];
     
     alternatives.sort((a, b) => {
-        let distA = Math.hypot(a.x - pixelX, a.y - pixelY);
-        let distB = Math.hypot(b.x - pixelX, b.y - pixelY);
+        let distA = (a.x - pixelX)**2 + (a.y - pixelY)**2;
+        let distB = (b.x - pixelX)**2 + (b.y - pixelY)**2;
         return distA - distB;
     });
     
@@ -52,7 +73,7 @@ function findPathAStar(startX, startY, targetX, targetY) {
 
     let OPEN = [startNode];
     let CLOSED = [];
-    let maxIterations = 1000; 
+    let maxIterations = 800; 
 
     while (OPEN.length > 0 && maxIterations > 0) {
         maxIterations--;
@@ -141,37 +162,31 @@ function drawPathVisualizer() {
 }
 
 function generateEnemy(x, y, room, roomKey) {
-    const enemy = document.createElement('div');
-    const regionOfInfluence = document.createElement('div');
+    const enemy = document.createElement('div');  
     enemy.className = "enemy";
-    regionOfInfluence.style.position = 'absolute';
 
     const isChaser = Math.random() > 0.75; 
     const type = isChaser ? 'chaser' : 'idle';
-    if (isChaser) enemy.style.backgroundColor = "orange";
+
+    if (isChaser) enemy.style.backgroundColor = "rgb(192, 44, 7)";
 
     const ROI_RADIUS = 75; 
     const enemySize = 15;
     const roiSize = ROI_RADIUS * 2;
     const roiOffset = -(ROI_RADIUS - enemySize / 2);
 
-    regionOfInfluence.style.width = roiSize + 'px';
-    regionOfInfluence.style.height = roiSize + 'px';
-    regionOfInfluence.style.top = roiOffset + 'px';
-    regionOfInfluence.style.left = roiOffset + 'px';
-    regionOfInfluence.style.backgroundColor = 'transparent';
-    regionOfInfluence.style.borderRadius = '50%';
-
     const enemyHealthBar = document.createElement('div');
     enemyHealthBar.className = 'health-bar';
 
-    enemy.appendChild(regionOfInfluence);
     enemy.appendChild(enemyHealthBar);
 
-    enemy.style.left = x + 'px'; 
-    enemy.style.top = y + 'px';
+    enemy.style.left = '0px'; 
+    enemy.style.top = '0px';
+    enemy.style.transform = `translate(${x}px, ${y}px)`;
 
     room.appendChild(enemy);
+
+    const assignedWeapon = getWeightedRandomWeapon();
 
     enemyData.push({
         x: x, y: y,
@@ -188,9 +203,10 @@ function generateEnemy(x, y, room, roomKey) {
         lastPathCalcTime: 0,
         spawnX: x, spawnY: y,
         patrolState: 'wait',
-        patrolWaitTime: Date.now() + Math.random() * 2000,
+        patrolWaitTime: Date.now() + 1000, 
         patrolTargetX: 0, patrolTargetY: 0,
-        patrolDx: 0, patrolDy: 0
+        patrolDx: 0, patrolDy: 0,
+        weapon: assignedWeapon
     });
 }
 
@@ -198,10 +214,17 @@ function updateEnemies() {
     const now = Date.now();
 
     for (let enemy of enemyData) {
+        let dxToPlayer = (x + 7.5) - (enemy.x + 7.5);
+        let dyToPlayer = (y + 7.5) - (enemy.y + 7.5);
+        let distanceToPlayer = Math.sqrt(dxToPlayer * dxToPlayer + dyToPlayer * dyToPlayer);
+
+        if (distanceToPlayer <= enemy.ROI_RADIUS) {
+            enemyShoots(enemy);
+        }
+
         if (enemy.type === 'chaser') {
-            const distToPlayer = Math.sqrt((enemy.x - x)**2 + (enemy.y - y)**2);
-            if (distToPlayer < enemy.ROI_RADIUS * 4) { 
-                if (now - enemy.lastPathCalcTime > 250) { 
+            if (distanceToPlayer < enemy.ROI_RADIUS * 3.5) { 
+                if (now - enemy.lastPathCalcTime > 400) { 
                     enemy.lastPathCalcTime = now;
                     enemy.path = findPathAStar(enemy.x, enemy.y, x, y);
                 }
@@ -213,11 +236,12 @@ function updateEnemies() {
                 let targetWaypoint = enemy.path[0];
                 let dx = targetWaypoint.x - enemy.x;
                 let dy = targetWaypoint.y - enemy.y;
-                let distance = Math.sqrt(dx * dx + dy * dy);
+                let distanceSq = dx * dx + dy * dy;
 
-                if (distance < 12 || (enemy.path.length === 1 && distance < enemy.moveSpeed)) {
+                if (distanceSq < 144 || (enemy.path.length === 1 && distanceSq < enemy.moveSpeed**2)) {
                     enemy.path.shift(); 
                 } else {
+                    let distance = Math.sqrt(distanceSq);
                     let moveX = (dx / distance) * enemy.moveSpeed;
                     let moveY = (dy / distance) * enemy.moveSpeed;
                     let nextX = enemy.x + moveX;
@@ -244,46 +268,46 @@ function updateEnemies() {
                         if (!isCollidingBox(driftX, enemy.y, 15)) enemy.x = driftX;
                     }
 
-                    enemy.element.style.left = enemy.x + 'px';
-                    enemy.element.style.top = enemy.y + 'px';
+                    enemy.element.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
                 }
             }
         } 
         else if (enemy.type === 'idle') {
-            if (enemy.patrolState === 'wait') {
-                if (now > enemy.patrolWaitTime) {
-                    const directions = [{dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1}];
-                    const dir = directions[Math.floor(Math.random() * directions.length)];
-                    const walkDist = 20 + (Math.random() * 30);
+            if (distanceToPlayer > enemy.ROI_RADIUS) {
+                if (enemy.patrolState === 'wait') {
+                    if (now > enemy.patrolWaitTime) {
+                        const directions = [{dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1}];
+                        const dir = directions[Math.floor(Math.random() * directions.length)];
+                        const walkDist = 20 + (Math.random() * 30);
+                        
+                        enemy.patrolDx = dir.dx;
+                        enemy.patrolDy = dir.dy;
+                        enemy.patrolTargetX = enemy.x + (dir.dx * walkDist);
+                        enemy.patrolTargetY = enemy.y + (dir.dy * walkDist);
+                        enemy.patrolState = 'move';
+                    }
+                } else if (enemy.patrolState === 'move') {
+                    let nextX = enemy.x + (enemy.patrolDx * enemy.moveSpeed);
+                    let nextY = enemy.y + (enemy.patrolDy * enemy.moveSpeed);
                     
-                    enemy.patrolDx = dir.dx;
-                    enemy.patrolDy = dir.dy;
-                    enemy.patrolTargetX = enemy.x + (dir.dx * walkDist);
-                    enemy.patrolTargetY = enemy.y + (dir.dy * walkDist);
-                    enemy.patrolState = 'move';
-                }
-            } else if (enemy.patrolState === 'move') {
-                let nextX = enemy.x + (enemy.patrolDx * enemy.moveSpeed);
-                let nextY = enemy.y + (enemy.patrolDy * enemy.moveSpeed);
-                
-                let reachedTarget = false;
-                if (enemy.patrolDx > 0 && nextX >= enemy.patrolTargetX) reachedTarget = true;
-                if (enemy.patrolDx < 0 && nextX <= enemy.patrolTargetX) reachedTarget = true;
-                if (enemy.patrolDy > 0 && nextY >= enemy.patrolTargetY) reachedTarget = true;
-                if (enemy.patrolDy < 0 && nextY <= enemy.patrolTargetY) reachedTarget = true;
+                    let reachedTarget = false;
+                    if (enemy.patrolDx > 0 && nextX >= enemy.patrolTargetX) reachedTarget = true;
+                    if (enemy.patrolDx < 0 && nextX <= enemy.patrolTargetX) reachedTarget = true;
+                    if (enemy.patrolDy > 0 && nextY >= enemy.patrolTargetY) reachedTarget = true;
+                    if (enemy.patrolDy < 0 && nextY <= enemy.patrolTargetY) reachedTarget = true;
 
-                const maxWander = 75; 
-                const outOfBounds = Math.abs(nextX - enemy.spawnX) > maxWander || Math.abs(nextY - enemy.spawnY) > maxWander;
-                const collision = isCollidingBox(nextX, nextY, 15);
+                    const maxWander = 75; 
+                    const outOfBounds = Math.abs(nextX - enemy.spawnX) > maxWander || Math.abs(nextY - enemy.spawnY) > maxWander;
+                    const collision = isCollidingBox(nextX, nextY, 15);
 
-                if (reachedTarget || outOfBounds || collision) {
-                    enemy.patrolState = 'wait';
-                    enemy.patrolWaitTime = now + 1000 + (Math.random() * 3000);
-                } else {
-                    enemy.x = nextX;
-                    enemy.y = nextY;
-                    enemy.element.style.left = enemy.x + 'px';
-                    enemy.element.style.top = enemy.y + 'px';
+                    if (reachedTarget || outOfBounds || collision) {
+                        enemy.patrolState = 'wait';
+                        enemy.patrolWaitTime = now + 1000; 
+                    } else {
+                        enemy.x = nextX;
+                        enemy.y = nextY;
+                        enemy.element.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
+                    }
                 }
             }
         }
@@ -293,53 +317,56 @@ function updateEnemies() {
 
 function enemyShoots(enemy) {
     const now = Date.now();
-    const interval = Math.random() * 100 + 750; 
+    let interval = Math.random() * 100 + 750; 
+    
+    if (enemy.weapon === 'shootLongRanged') {
+        interval *= 1.15;
+    } else if (enemy.weapon === 'shootLaser') {
+        interval *= 2;
+    } else if (enemy.weapon === 'shootRicochetMulti') {
+        interval *= 3;
+    }
 
     if (now - enemy.lastShotTime < interval) return; 
     enemy.lastShotTime = now; 
 
-    let bulletX = enemy.x;
-    let bulletY = enemy.y;
-    let dx = x - bulletX;
-    let dy = y - bulletY;
-
-    const length = Math.sqrt(dx * dx + dy * dy);
-    if (length > 0) {
-        dx /= length;
-        dy /= length;
-    }
-
-    const bullet = document.createElement('div');
-    bullet.className = "bullet";
-    bullet.style.transform = `translate(${bulletX}px, ${bulletY}px)`;
-    world.appendChild(bullet);
-
-    enemyBullets.push({
-        element: bullet,
-        x: bulletX, y: bulletY,
-        dx: dx, dy: dy,
-        createdAt: Date.now(),
-        createdBy: 'enemy',
-    });
+    window[enemy.weapon]('enemy', enemy.x, enemy.y, x, y);
 }
 
-function updateEnemyBullets(speed) {
+function updateEnemyBullets() {
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
         let b = enemyBullets[i];
-        if (Date.now() - b.createdAt > 3000) {
+        
+        if (Date.now() - b.createdAt > b.lifeSpan) {
             b.element.remove();
             enemyBullets.splice(i, 1);
-            continue;
+            continue; 
         }
-        b.x += b.dx * speed; 
-        if (isCollidingBox(b.x, b.y, 10)) {
-            b.x -= b.dx * speed; 
-            b.dx = -b.dx;        
+
+        b.x += b.dx * b.speed; 
+        if (!b.isLaser && isCollidingBox(b.x, b.y, 10)) {
+            if (b.bounces > 0) {
+                b.bounces--;
+                b.x -= b.dx * b.speed; 
+                b.dx = -b.dx;
+            } else {
+                b.element.remove();
+                enemyBullets.splice(i, 1);
+                continue;
+            }
         }
-        b.y += b.dy * speed;
-        if (isCollidingBox(b.x, b.y, 10)) {
-            b.y -= b.dy * speed; 
-            b.dy = -b.dy;        
+
+        b.y += b.dy * b.speed;
+        if (!b.isLaser && isCollidingBox(b.x, b.y, 10)) { 
+            if (b.bounces > 0) {
+                b.bounces--;
+                b.y -= b.dy * b.speed; 
+                b.dy = -b.dy; 
+            } else {
+                b.element.remove();
+                enemyBullets.splice(i, 1);
+                continue;
+            }       
         }
         b.element.style.transform = `translate(${b.x}px, ${b.y}px)`;
     }
@@ -368,6 +395,8 @@ function damageEnemy(enemy) {
 }
 
 function killEnemy(enemy) {
+    playerScore += 1;
+    timer += 5000;
     dropLoot(enemy.x, enemy.y);
     enemy.element.remove();
     const index = enemyData.indexOf(enemy);

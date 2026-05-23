@@ -2,18 +2,23 @@ const ROI_RADIUS = 75;
 let wallData = [];
 let enemyData = [];
 
-function isCollidingBox(x, y, playerSize) {
-    for (let i = 0; i < wallData.length; i++) {
+function isCollidingBox(x, y, playerSize, ignoreLootBoxes = false) {
+    const xEnd = x + playerSize;
+    const yEnd = y + playerSize;
+    const wLen = wallData.length;
+
+    for (let i = 0; i < wLen; i++) {
         let wall = wallData[i];
-        if (wall.x < x + playerSize && x < (wall.x + wall.width) && wall.y < y + playerSize && y < (wall.y + wall.height)) {
+        if (wall.x < xEnd && x < (wall.x + wall.width) && wall.y < yEnd && y < (wall.y + wall.height)) {
             return true; 
         }
     }
     
-    if (typeof lootBoxesData !== 'undefined') {
-        for (let i = 0; i < lootBoxesData.length; i++) {
+    if (!ignoreLootBoxes && typeof lootBoxesData !== 'undefined') {
+        const lLen = lootBoxesData.length;
+        for (let i = 0; i < lLen; i++) {
             let box = lootBoxesData[i];
-            if (box.x < x + playerSize && x < (box.x + box.boxSize) && box.y < y + playerSize && y < (box.y + box.boxSize)) {
+            if (box.x < xEnd && x < (box.x + box.boxSize) && box.y < yEnd && y < (box.y + box.boxSize)) {
                 return true;
             }
         }
@@ -41,20 +46,6 @@ function checkEnemyHits(playerBullets) {
             }
         }
     }
-}
-
-function isPlayerInROI(playerX, playerY) {
-    for (let i = 0; i < enemyData.length; i++) {
-        let enemy = enemyData[i];
-        const enemyCenterX = enemy.x + enemy.width / 2;
-        const enemyCenterY = enemy.y + enemy.height / 2;
-        const playerCenterX = playerX + 15 / 2;
-        const playerCenterY = playerY + 15 / 2;
-
-        const dist = Math.sqrt((playerCenterX - enemyCenterX) ** 2 + (playerCenterY - enemyCenterY) ** 2);
-        if (dist < ROI_RADIUS) return enemy;
-    }
-    return null;
 }
 
 function isPlayerHit(enemyBullets, playerX, playerY) {

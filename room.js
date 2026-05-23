@@ -54,6 +54,12 @@ function drawBox(x, y, roomKey, width = 100, height = 100, thickness = 4, openin
         isLootBox = true;
         generateLootBox(x + (width/2) - 10 + thickness*0.5, y + (height/2) - 10 + thickness*0.5);
     }
+    const shouldGenerateZoneFactor = isLootBox ? 0.99 : 0.95;
+    const shouldGenerateZone = Math.random() > shouldGenerateZoneFactor;
+
+    if (shouldGenerateZone) {
+        generateZone(x, y, width, height);
+    } 
     
     const enemySize = 20; 
     const padding = 10;

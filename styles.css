@@ -1,17 +1,22 @@
 html, body {
-  overflow: hidden;
-  height: 100%;
-  justify-content: center;
-  align-content: center;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    background-color: #071007; 
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 15px 15px;
 }
 
 #game-container {
-    width: 100vw; 
-    height: 98vh; 
-    background: black; 
+    width: 100%; 
+    height: 100%; 
     position: relative; 
     overflow: hidden;
     border: 2px solid #333;
+    box-sizing: border-box;
 }
 
 #world {
@@ -25,59 +30,85 @@ html, body {
 #player {
     width: 15px; 
     height: 15px; 
-    background: royalblue; 
+    background: #44ff6f; 
     position: absolute; 
     top: 0px; 
     left: 0px;
+    z-index: 160; 
 }
+
 
 #sector {
     position: absolute;
-    top: -92.5px;
-    left: -92.5px;
-    width: 200px;
-    height: 200px;
-    background: rgba(142, 225, 65, 0.50); 
+    
+    top: -192.5px; 
+    left: -192.5px;
+    width: 400px;
+    height: 400px;
+    
+    background: radial-gradient(circle at 50% 50%, rgba(142, 225, 65, 0.4) 0%, transparent 60%); 
     border-radius: 50%;
     mask-image: conic-gradient(yellow 0deg 110deg, transparent 110deg 360deg);
     -webkit-mask-image: conic-gradient(yellow 0deg 110deg, transparent 110deg 360deg);
+    pointer-events: none;
+    z-index: 140; 
+}
+
+
+#darkness-overlay {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 4000px;
+    height: 4000px;
+    
+    background: 
+        radial-gradient(circle at 50% 50%, transparent 400px, rgba(10, 12, 20, 0.92) 401px), 
+        conic-gradient(transparent 0deg 110deg, rgba(10, 12, 20, 0.92) 110deg 360deg);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 150; 
+    
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 60px, rgba(0,0,0,0.6) 150px, black 250px);
+    mask-image: radial-gradient(circle at 50% 50%, transparent 60px, rgba(0,0,0,0.6) 150px, black 250px);
 }
 
 .enemy {
-    background-color: greenyellow;
     position: absolute;
     width: 15px;
     height: 15px;
+    background-color: #ff3366; 
 }
 
 .wall {
     position: absolute;
-    background-color: white;
+    background-color: #377946;
 }
 
 .bullet {
     position: absolute;
     width: 10px;
     height: 10px;
-    background-color: white;
     top: 0px;
     left: 0px;
+    z-index: 160; 
 }
 
 .health-bar {
     position: absolute;
     width: 30px;
-    height: 3px;
-    border: 1px solid white;
-    background-color: greenyellow;
+    height: 2px;
+    border: 1px solid #377946;
+    background-color: rgb(48, 179, 36);
     top: -15px;
-    left: -9px;
+    left: -60%;
 }
 
 .drop {
     position: absolute;
     width: 10px;
     height: 10px;
+    z-index: 155; 
 }
 
 #inventory {
@@ -89,16 +120,35 @@ html, body {
     flex-direction: column; 
     gap: 5px; 
     z-index: 1000;
-    border: 2px solid white;
+    border: 2px solid #377946;
     padding: 5px;
     background-color: black;
+}
+
+#timer {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
+    height: fit-content;
+    z-index: 1000;
+    border: 2px solid #377946;
+    padding: 15px;
+    padding-left: 25px;
+    padding-right: 25px;
+    background-color: black;
+    color: #377946;
+    font-size: 40px;
+    display: flex;
+    text-align: center;
 }
 
 #player-health-box {
     width: 100%;
     height: 20px;
     background-color: #333;
-    border: 2px solid white;
+    border: 2px solid #377946;
     box-sizing: border-box;
 }
 
@@ -116,9 +166,8 @@ html, body {
 .bullet-box {
     width: 40px;
     height: 30px;
-    border: 2px solid white;
+    border: 2px solid rgb(192, 192, 192);
     background-color: gray;
-    border-radius: 2px;
     box-sizing: border-box; 
 }
 
@@ -130,5 +179,158 @@ html, body {
     position: absolute;
     width: 20px;
     height: 20px;
-    background-color: white;
+    background-color: gold; 
+    z-index: 160; 
+}
+
+#player-indicator {
+    position: absolute;
+    bottom: 15px;
+    left: calc(50% + 215px);
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    z-index: 1001;
+    border: 2px solid #377946;
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#shop {
+    display: none; 
+    grid-template-columns: 1fr max-content;
+    position: absolute;
+    top: 50%;
+    right: 40px;
+    transform: translateY(-50%);
+    width: 25vw;
+    min-width: 280px;
+    max-width: 400px;
+    border: 4px solid #377946;
+    background-color: black;
+    gap: 10px;
+    padding: 10px;
+    color: #377946;
+    box-sizing: border-box;
+    z-index: 1000;
+}
+
+#item-list {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 5px;
+}
+
+.item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    border: 2px solid #377946;
+    padding: 10px;
+    gap: 10px;
+    background-color: black;
+    cursor: pointer;
+}
+
+.item:hover {
+    background-color: #2a2a2a;
+}
+
+.item.disabled {
+    background-color: rgba(200, 0, 0, 0.3);
+    border-color: rgba(255, 50, 50, 0.5);
+    pointer-events: none;
+}
+
+.item.selected {
+    border-color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.15);
+}
+
+.item-info {
+    grid-column: 1;
+    display: grid;
+    gap: 4px;
+}
+
+.item-name {
+    font-weight: bold;
+    font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+    color: white;
+}
+
+.item-desc {
+    font-size: clamp(0.7rem, 1vw, 0.85rem);
+    color: gray;
+}
+
+.item-price {
+    grid-column: 2;
+    color: gold;
+    font-weight: bold;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    justify-self: end;
+}
+
+#wallet {
+    grid-column: 1;
+    border: 2px solid #377946;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: white;
+}
+
+#buy-button {
+    grid-column: 2;
+    border: 2px solid #377946;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: transparent;
+    color: white;
+    transition: background-color 0.2s;
+}
+
+#buy-button:hover {
+    background-color: #333;
+}
+
+#game-menu {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    border: 3px solid #377946;
+    color: #377946;
+    background-color: black;
+
+    z-index: 3000;
+    padding: 10px;
+    gap: 15px;
+}
+
+#player-high-score {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+#resume-button {
+    border: 2px solid #377946;
+    padding: 15px;
+    font-size: 36px;
+}
+
+#resume-button:hover {
+    background-color: #37794838;
+    cursor: pointer;
 }

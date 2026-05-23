@@ -8,6 +8,11 @@
 </head>
 <body>
     <div id="game-container">
+        <div id="game-menu">
+            <div id="player-high-score"></div>
+            <div id="resume-button">Resume</div>
+        </div>
+        <div id="timer"></div>
         <div id="inventory">
             <div id="player-health-box">
                 <div class="health-bar" id="player-health-bar"></div>
@@ -24,16 +29,28 @@
                 <div class="bullet-box" id="bullet-box-9"></div>
             </div>
         </div>
+        <div id="shop">
+            <div id="item-list">
+                <div id="item-1" class="item"></div>
+                <div id="item-2" class="item"></div>
+                <div id="item-3" class="item"></div>
+            </div>
+            <div id="wallet"></div>
+            <div id="buy-button">BUY</div>
+        </div>
         <div id="world">
             <div id="player">
                 <div id="sector"></div>
             </div>
         </div>
     </div>
+    <script src="gun_logic.js"></script>
     <script src="player.js"></script>
     <script src="collision.js"></script>
     <script src="looting.js"></script>
     <script src="enemy.js"></script>
+    <script src="shop.js"></script>
+    <script src="zones.js"></script>
     <script src="room.js"></script>
     <script src="render.js"></script>
 </body>
