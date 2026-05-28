@@ -5,6 +5,7 @@ import { updateEnemies, drawEnemies, resetEnemies } from './enemy_logic.js';
 import { updateEffects } from './status_manager.js';
 import { checkSolidCollision } from './physics_engine.js';
 import { drawLoot, updateLoot, spawnSpecificLoot, BOX_SIZE, resetEconomy } from './economy_manager.js';
+import { pauseGameLoop, playGameLoop } from "./sound_engine.js";
 
 const gameContainerElement = document.getElementById('game-container');
 const UIContainerElement = document.getElementById('ui-container');
@@ -22,6 +23,8 @@ let cameraOffsetY = 0;
 let lastFrameTime = 0;
 let lastBulletSpawnTime = 0;
 
+let isMusicPlaying = false;
+
 resumeButtonElement.addEventListener('click', () => {
     if (isPlayerKilled) {
         resetWorld();
@@ -30,6 +33,7 @@ resumeButtonElement.addEventListener('click', () => {
         resetProjectiles();
         
         resetPlayer(); 
+        playGameLoop();
     } else {
         setPaused(false); 
         document.getElementById('game-menu').style.display = 'none';
@@ -88,6 +92,19 @@ function updateGame(timestamp) {
 
     requestAnimationFrame(updateGame);
 }
+
+const startBackgroundMusic = () => {
+    if (!isMusicPlaying && !isPlayerKilled) {
+        playGameLoop();
+        isMusicPlaying = true;
+        
+        window.removeEventListener('click', startBackgroundMusic);
+        window.removeEventListener('keydown', startBackgroundMusic);
+    }
+};
+
+window.addEventListener('click', startBackgroundMusic);
+window.addEventListener('keydown', startBackgroundMusic);
 
 updatePlayerHealth();
 requestAnimationFrame(updateGame);

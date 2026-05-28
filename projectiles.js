@@ -2,6 +2,7 @@ import { checkWallCollision, getHitEnemy, getHitLootBox, isPlayerHit } from './p
 import { damageEnemy } from './enemy_logic.js';
 import { damagePlayer } from './player_logic.js';
 import { damageLootBox } from './economy_manager.js';
+import { playBulletBounce, playLaser, playRangedShoot, playRicochetMulti, playRicochetSingle } from './sound_engine.js';
 
 // Constants and other variables
 export const playerBullets = [];
@@ -14,7 +15,7 @@ export const WEAPON_CONFIGS = {
     shootLongRanged: { speed: 5, lifeSpan: 3000, color: '#00695C', bounces: 0 },
     shootLaser: { speed: 6, lifeSpan: 1500, color: 'rgb(77, 76, 254)', bounces: 0, isLaser: true },
     shootRicochetSingle: { speed: 4, lifeSpan: 5000, color: '#FFB300', bounces: 1000 },
-    shootRicochetMulti: { speed: 4, lifeSpan: 5000, color: '#FF6D00', bounces: 1000, isMulti: true }
+    shootRicochetMulti: { speed: 4, lifeSpan: 5000, color: '#FF6D00', bounces: 5, isMulti: true }
 };
 
 // Rendering Logic
@@ -50,13 +51,13 @@ export function updateBullets() {
 
             b.x += b.dx * b.speed; 
             if (!b.isLaser && checkWallCollision(b.x - 5, b.y - 5, 10)) { 
-                if (b.bounces > 0) { b.bounces--; b.x -= b.dx * b.speed; b.dx = -b.dx; } 
+                if (b.bounces > 0) { b.bounces--; b.x -= b.dx * b.speed; b.dx = -b.dx; playBulletBounce()} 
                 else { bulletsArray.splice(i, 1); continue; }
             }
 
             b.y += b.dy * b.speed;
             if (!b.isLaser && checkWallCollision(b.x - 5, b.y - 5, 10)) { 
-                if (b.bounces > 0) { b.bounces--; b.y -= b.dy * b.speed; b.dy = -b.dy; } 
+                if (b.bounces > 0) { b.bounces--; b.y -= b.dy * b.speed; b.dy = -b.dy; playBulletBounce()} 
                 else { bulletsArray.splice(i, 1); continue; }
             }
 
@@ -146,6 +147,28 @@ export function fireWeapon(hostType, weaponName, startX, startY, targetX, target
         spawnBullet(hostType, startX, startY, rightDx, rightDy, config); 
     } else {
         spawnBullet(hostType, startX, startY, dx, dy, config);
+    }
+
+    switch (weaponName) {
+        case 'shootShortRanged':
+            playRangedShoot();
+            break;
+
+        case 'shootLongRanged':
+            playRangedShoot();
+            break;
+
+        case 'shootRicochetSingle':
+            playRicochetSingle();
+            break;
+
+        case 'shootRicochetMulti':
+            playRicochetMulti();
+            break;
+
+        case 'shootLaser':
+            playLaser();
+            break;
     }
 }
 

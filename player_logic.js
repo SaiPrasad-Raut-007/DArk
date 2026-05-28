@@ -1,5 +1,6 @@
 import { fireWeapon } from './projectiles.js';
 import { checkSolidCollision } from './physics_engine.js';
+import { pauseGameLoop, playDead, playEffect, playHurt, playReload } from './sound_engine.js';
 
 // Constants and other Variables
 const MAX_PLAYER_HEALTH = 100;
@@ -308,12 +309,16 @@ export function damagePlayer() {
     if (currentPlayerHealth <= 0) {
         currentPlayerHealth = 0;
         killPlayer();
+        playDead();
+    } else {
+        playHurt();
     }
 
     updatePlayerHealth();
 }
 
 export function killPlayer() {
+    pauseGameLoop();
     isPlayerKilled = true;
     isPaused = true;
     
@@ -361,24 +366,28 @@ export function healPlayer(amount) {
         currentPlayerHealth = MAX_PLAYER_HEALTH; 
     }
     updatePlayerHealth(); 
+    playEffect();
 }
 
 export function setPlayerSpeed(newSpeed) {
     currentPlayerSpeed = newSpeed;
+    playEffect();
 }
 
 export function changePlayerWeapon(newWeaponName) {
     currentWeapon = newWeaponName;
     currentNumberOfBullets = MAX_NUMBER_OF_BULLETS; 
     updateInventoryUI(); 
+    playEffect();
 }
 
 export let currentFlashlightRadius = 400; 
 export function setVisionRadius(newRadius) {
     currentFlashlightRadius = newRadius;
+    playEffect();
 }
 
-export function setBullets(count) { currentNumberOfBullets = count; }
+export function setBullets(count) { currentNumberOfBullets = count; playReload();}
 export function getSpeed() { return currentPlayerSpeed; }
 
 // Time & Wallet System 
