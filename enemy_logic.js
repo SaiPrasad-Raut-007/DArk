@@ -44,6 +44,9 @@ export function spawnEnemy(x, y, roomKey) {
         id: Math.random().toString(36).substring(2, 9),
         x: x, 
         y: y,
+        facingAngle: Math.random() * Math.PI * 2,
+        targetAngle: 0,
+        FOV: 120 * (Math.PI / 180),
         spawnX: x, 
         spawnY: y,
         width: ENEMY_SIZE, 
@@ -157,6 +160,52 @@ function findPathAStar(startX, startY, targetX, targetY) {
     return [];
 }
 
+function isInLineOfSight(startX, startY, endX, endY) {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const distance = Math.sqrt(dy * dy + dx * dx);
+
+    const stepSize = 4;
+    const totalSteps = distance / stepSize;
+
+    for (let i = 0; i < totalSteps; i++) {
+        const progress = i / totalSteps;
+
+        const checkX = startX + dx * progress;
+        const checkY = startY + dy * progress;
+
+        if (checkSolidCollision(checkX, checkY, 1)) {
+            return true; 
+        }
+    }
+
+    return false;
+}
+
+function isPlayerInConeVision(enemy, playerX, playerY) {
+    const distanceToPlayer = Math.sqrt((playerX - enemy.x)**2 + (playerY - enemy.y)**2);
+
+    if (distanceToPlayer > enemy.ROI_RADIUS) return false;
+
+    const angleToPlayer = Math.atan2(playerY - enemy.y, playerX - enemy.x);
+
+    const angularDifference = Math.atan2(
+        Math.sin(angleToPlayer - enemy.facingAngle), 
+        Math.cos(angleToPlayer - enemy.facingAngle)
+    );
+
+    if (Math.abs(angularDifference) > enemy.FOV / 2) return false;
+
+    const eCenterX = enemy.x + (ENEMY_SIZE / 2);
+    const eCenterY = enemy.y + (ENEMY_SIZE / 2);
+
+    if (isInLineOfSight(eCenterX, eCenterY, playerX, playerY)) {
+        return false;
+    }
+
+    return true;
+}
+
 // Update Logic 
 export function updateEnemies() {
     const now = Date.now();
@@ -168,12 +217,14 @@ export function updateEnemies() {
         let dyToPlayer = (playerYPosition + (PLAYER_SIZE/2)) - (enemy.y + (ENEMY_SIZE/2));
         let distanceToPlayer = Math.sqrt(dxToPlayer * dxToPlayer + dyToPlayer * dyToPlayer);
 
-        if (distanceToPlayer <= enemy.ROI_RADIUS) {
+        if (distanceToPlayer <= enemy.ROI_RADIUS && isPlayerInConeVision(enemy, playerXPosition, playerYPosition)) {
             enemyShoots(enemy);
         }
 
         if (enemy.type === 'chaser') {
             if (distanceToPlayer < enemy.ROI_RADIUS * 3.5) { 
+                enemy.facingAngle = Math.atan2(dyToPlayer, dxToPlayer);
+
                 if (now - enemy.lastPathCalcTime > 400) { 
                     enemy.lastPathCalcTime = now;
                     enemy.path = findPathAStar(enemy.x, enemy.y, playerXPosition, playerYPosition);
@@ -214,6 +265,12 @@ export function updateEnemies() {
         } 
 
         else if (enemy.type === 'idle') {
+            let angleDiff = Math.atan2(
+                Math.sin(enemy.targetAngle - enemy.facingAngle), 
+                Math.cos(enemy.targetAngle - enemy.facingAngle)
+            );
+            enemy.facingAngle += angleDiff * 0.05;
+
             if (distanceToPlayer > enemy.ROI_RADIUS) {
                 if (enemy.patrolState === 'wait') {
                     if (now > enemy.patrolWaitTime) {
@@ -221,6 +278,9 @@ export function updateEnemies() {
                         const dir = directions[Math.floor(Math.random() * directions.length)];
                         const walkDist = 20 + (Math.random() * 30);
                         
+                        let randomOffset = (Math.random() - 0.5) * (Math.PI / 2);
+                        enemy.targetAngle = enemy.facingAngle + randomOffset;
+
                         enemy.patrolDx = dir.dx;
                         enemy.patrolDy = dir.dy;
                         enemy.patrolTargetX = enemy.x + (dir.dx * walkDist);
@@ -299,6 +359,38 @@ export function drawEnemies(ctx) {
     for (let i = 0; i < activeEnemies.length; i++) {
         let enemy = activeEnemies[i];
 
+        // Enemy Sector
+        ctx.beginPath();
+        ctx.moveTo(enemy.x + (enemy.width / 2), enemy.y + (enemy.height / 2));
+
+        ctx.arc(
+            enemy.x + (enemy.width / 2), 
+            enemy.y + (enemy.height / 2), 
+            enemy.ROI_RADIUS, 
+            enemy.facingAngle - (enemy.FOV / 2), 
+            enemy.facingAngle + (enemy.FOV / 2)
+        );
+        ctx.lineTo(enemy.x + (enemy.width / 2), enemy.y + (enemy.height / 2));
+        
+        let gradient = ctx.createRadialGradient(
+            enemy.x + (enemy.width / 2), enemy.y + (enemy.height / 2), 0, 
+            enemy.x + (enemy.width / 2), enemy.y + (enemy.height / 2), enemy.ROI_RADIUS
+        );
+        
+        gradient.addColorStop(0, 'rgba(255, 0, 0, 0.4)');
+        gradient.addColorStop(0.6, 'rgba(255, 0, 0, 0.1)');  
+        gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');      
+
+        ctx.fillStyle = gradient;
+        
+        ctx.globalCompositeOperation = 'lighter';
+        
+        ctx.fill();
+        ctx.closePath();
+
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Enemy itself
         ctx.beginPath();
         ctx.fillStyle = enemy.color;
         ctx.rect(enemy.x, enemy.y, enemy.width, enemy.height);

@@ -83,12 +83,12 @@ function updateGame(timestamp) {
 
     // Drawing (world space)
     drawZones(ctx);
-    drawWalls(ctx);
-    drawLoot(ctx);      
+    drawWalls(ctx);    
     drawEnemies(ctx); 
     drawBullets(ctx);
-    drawPlayer(ctx);
     drawLighting(ctx, canvas);
+    drawPlayer(ctx);
+    drawLoot(ctx);  
 
     requestAnimationFrame(updateGame);
 }
