@@ -8,7 +8,7 @@ const STARTING_PLAYER_SPEED = 2;
 const STARTING_TIMER = 60000;
 const MAX_NUMBER_OF_BULLETS = 9;
 const MAX_ALLOWED_PLAYER_DAMAGE = 10;
-const STARTING_WEAPON = 'shootRicochetMulti';
+const STARTING_WEAPON = 'shootShortRanged';
 
 // Constants for the continous game play
 export let isPlayerKilled = false;
