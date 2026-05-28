@@ -1,12 +1,12 @@
-const effect = new Audio('assets/sounds/effect.wav');
-const reload = new Audio('assets/sounds/reload.mp3')
-const hurt = new Audio('assets/sounds/hurt.mp3')
-const dead = new Audio('assets/sounds/dead.mp3');
-const gameLoop = new Audio('assets/sounds/game loop.mp3');
+const effect = new Audio('../assets/sounds/effect.wav');
+const reload = new Audio('../assets/sounds/reload.mp3')
+const hurt = new Audio('../assets/sounds/hurt.mp3')
+const dead = new Audio('../assets/sounds/dead.mp3');
+const gameLoop = new Audio('../assets/sounds/game loop.mp3');
 gameLoop.loop = true;
 
 export function playRangedShoot() {
-    const rangedShoot = new Audio('assets/sounds/ranged shoot.mp3');
+    const rangedShoot = new Audio('../assets/sounds/ranged shoot.mp3');
     rangedShoot.preservesPitch = false;
     rangedShoot.currentTime = 0.05;
 
@@ -18,7 +18,7 @@ export function playRangedShoot() {
 }
 
 export function playLaser() {
-    const laser = new Audio('assets/sounds/laser.mp3');
+    const laser = new Audio('../assets/sounds/laser.mp3');
     laser.preservesPitch = false;
 
     const randomPitchFactor = Math.random() * (1 - 0.25) + 0.25;
@@ -29,7 +29,7 @@ export function playLaser() {
 }
 
 export function playRicochetSingle() {
-    const ricochetSingle = new Audio('assets/sounds/ricochet.mp3');
+    const ricochetSingle = new Audio('../assets/sounds/ricochet.mp3');
     ricochetSingle.preservesPitch = false;
 
     const randomPitchFactor = Math.random() * (1 - 0.5) + 0.5;
@@ -41,7 +41,7 @@ export function playRicochetSingle() {
 }
 
 export function playRicochetMulti() {  
-    const ricochetMulti = new Audio('assets/sounds/ricochet.mp3');
+    const ricochetMulti = new Audio('../assets/sounds/ricochet.mp3');
     ricochetMulti.preservesPitch = false;
 
     const randomPitchFactor = Math.random() * (0.65 - 0.55) + 0.55;
@@ -75,7 +75,7 @@ export function playDead() {
 }
 
 export function playBulletBounce() {
-    const bulletBounce = new Audio('assets/sounds/bounce.mp3');
+    const bulletBounce = new Audio('../assets/sounds/bounce.mp3');
 
     bulletBounce.currentTime = 0;
     bulletBounce.volume = 0.05;
