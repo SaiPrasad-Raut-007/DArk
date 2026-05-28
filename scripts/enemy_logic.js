@@ -68,7 +68,9 @@ export function spawnEnemy(x, y, roomKey) {
         patrolTargetX: 0, 
         patrolTargetY: 0,
         patrolDx: 0, 
-        patrolDy: 0
+        patrolDy: 0,
+        // Alert variables
+        alertTimer: 0
     });
 }
 
@@ -271,15 +273,15 @@ export function updateEnemies() {
             );
             enemy.facingAngle += angleDiff * 0.05;
 
-            if (distanceToPlayer > enemy.ROI_RADIUS) {
+            if (distanceToPlayer <= enemy.ROI_RADIUS * 0.75) {
+                enemy.type = 'alert';
+                enemy.alertTimer = 0;
+            } else {
                 if (enemy.patrolState === 'wait') {
                     if (now > enemy.patrolWaitTime) {
                         const directions = [{dx: 1, dy: 0}, {dx: -1, dy: 0}, {dx: 0, dy: 1}, {dx: 0, dy: -1}];
                         const dir = directions[Math.floor(Math.random() * directions.length)];
                         const walkDist = 20 + (Math.random() * 30);
-                        
-                        let randomOffset = (Math.random() - 0.5) * (Math.PI / 2);
-                        enemy.targetAngle = enemy.facingAngle + randomOffset;
 
                         enemy.patrolDx = dir.dx;
                         enemy.patrolDy = dir.dy;
@@ -287,27 +289,51 @@ export function updateEnemies() {
                         enemy.patrolTargetY = enemy.y + (dir.dy * walkDist);
                         enemy.patrolState = 'move';
                     }
-                } else if (enemy.patrolState === 'move') {
+                } 
+                
+                else if (enemy.patrolState === 'move') {
                     let nextX = enemy.x + (enemy.patrolDx * enemy.moveSpeed);
                     let nextY = enemy.y + (enemy.patrolDy * enemy.moveSpeed);
-                    
+
                     let reachedTarget = false;
                     if (enemy.patrolDx > 0 && nextX >= enemy.patrolTargetX) reachedTarget = true;
                     if (enemy.patrolDx < 0 && nextX <= enemy.patrolTargetX) reachedTarget = true;
                     if (enemy.patrolDy > 0 && nextY >= enemy.patrolTargetY) reachedTarget = true;
                     if (enemy.patrolDy < 0 && nextY <= enemy.patrolTargetY) reachedTarget = true;
 
-                    const maxWander = 75; 
+                    const maxWander = 75;
                     const outOfBounds = Math.abs(nextX - enemy.spawnX) > maxWander || Math.abs(nextY - enemy.spawnY) > maxWander;
                     const collision = checkSolidCollision(nextX, nextY, ENEMY_SIZE);
 
                     if (reachedTarget || outOfBounds || collision) {
                         enemy.patrolState = 'wait';
-                        enemy.patrolWaitTime = now + 1000; 
+                        enemy.patrolWaitTime = now + 1000;
                     } else {
                         enemy.x = nextX;
                         enemy.y = nextY;
                     }
+                }
+            }
+        }
+
+        else if (enemy.type === 'alert') {
+            enemy.targetAngle = Math.atan2(dyToPlayer, dxToPlayer);
+
+            let angleDiff = Math.atan2(
+                Math.sin(enemy.targetAngle - enemy.facingAngle),
+                Math.cos(enemy.targetAngle - enemy.facingAngle)
+            );
+            enemy.facingAngle += angleDiff * 0.05;
+
+            if (distanceToPlayer <= enemy.ROI_RADIUS * 0.75) {
+                enemy.alertTimer = now;
+                enemyShoots(enemy);
+            } else {
+                if (enemy.alertTimer !== 0 && now - enemy.alertTimer > 2000) {
+                    enemy.type = 'idle';
+                    enemy.alertTimer = 0;
+                    enemy.patrolState = 'wait';
+                    enemy.patrolWaitTime = now + 500;
                 }
             }
         }
