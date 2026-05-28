@@ -10,106 +10,7 @@ html, body {
     background-size: 15px 15px;
 }
 
-#game-container {
-    width: 100%; 
-    height: 100%; 
-    position: relative; 
-    overflow: hidden;
-    border: 2px solid #333;
-    box-sizing: border-box;
-}
-
-#world {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-#player {
-    width: 15px; 
-    height: 15px; 
-    background: #44ff6f; 
-    position: absolute; 
-    top: 0px; 
-    left: 0px;
-    z-index: 160; 
-}
-
-
-#sector {
-    position: absolute;
-    
-    top: -192.5px; 
-    left: -192.5px;
-    width: 400px;
-    height: 400px;
-    
-    background: radial-gradient(circle at 50% 50%, rgba(142, 225, 65, 0.4) 0%, transparent 60%); 
-    border-radius: 50%;
-    mask-image: conic-gradient(yellow 0deg 110deg, transparent 110deg 360deg);
-    -webkit-mask-image: conic-gradient(yellow 0deg 110deg, transparent 110deg 360deg);
-    pointer-events: none;
-    z-index: 140; 
-}
-
-
-#darkness-overlay {
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    width: 4000px;
-    height: 4000px;
-    
-    background: 
-        radial-gradient(circle at 50% 50%, transparent 400px, rgba(10, 12, 20, 0.92) 401px), 
-        conic-gradient(transparent 0deg 110deg, rgba(10, 12, 20, 0.92) 110deg 360deg);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 150; 
-    
-    -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 60px, rgba(0,0,0,0.6) 150px, black 250px);
-    mask-image: radial-gradient(circle at 50% 50%, transparent 60px, rgba(0,0,0,0.6) 150px, black 250px);
-}
-
-.enemy {
-    position: absolute;
-    width: 15px;
-    height: 15px;
-    background-color: #ff3366; 
-}
-
-.wall {
-    position: absolute;
-    background-color: #377946;
-}
-
-.bullet {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    top: 0px;
-    left: 0px;
-    z-index: 160; 
-}
-
-.health-bar {
-    position: absolute;
-    width: 30px;
-    height: 2px;
-    border: 1px solid #377946;
-    background-color: rgb(48, 179, 36);
-    top: -15px;
-    left: -60%;
-}
-
-.drop {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    z-index: 155; 
-}
+/* GUI Elements (Inventory, Shop, Timer, Player Indicator, Game Menu) */
 
 #inventory {
     position: absolute;
@@ -333,4 +234,19 @@ html, body {
 #resume-button:hover {
     background-color: #37794838;
     cursor: pointer;
+}
+
+#player-indicator {
+    position: absolute;
+    bottom: 15px;
+    left: calc(50% + 215px);
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    z-index: 1001;
+    border: 2px solid #377946;
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
