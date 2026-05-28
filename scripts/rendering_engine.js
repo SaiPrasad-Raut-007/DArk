@@ -25,15 +25,25 @@ let lastBulletSpawnTime = 0;
 
 let isMusicPlaying = false;
 
+function resetGame() {
+    resetWorld();
+    resetEnemies();
+    resetEconomy();
+    resetProjectiles();
+    
+    resetPlayer(); 
+    playGameLoop();
+}
+
+window.addEventListener('keydown', (event) => {
+    if (event.key === '`') {
+        resetGame();
+    }
+});
+
 resumeButtonElement.addEventListener('click', () => {
     if (isPlayerKilled) {
-        resetWorld();
-        resetEnemies();
-        resetEconomy();
-        resetProjectiles();
-        
-        resetPlayer(); 
-        playGameLoop();
+        resetGame();
     } else {
         setPaused(false); 
         document.getElementById('game-menu').style.display = 'none';
